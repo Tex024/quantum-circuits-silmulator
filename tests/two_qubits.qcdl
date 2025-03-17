@@ -1,0 +1,7 @@
+# Two qubits test with controlled outcomes.
+def q0;
+def q1;
+H(q0);
+CX(q1: q0);
+measure;
+? [0,0]:50; [1,1]:50

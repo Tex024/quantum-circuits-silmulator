@@ -1,4 +1,5 @@
-from src.simulator import *
+from src.qsimulator import *
+from src.qparser import *
 
 filename = input("Enter QCDL file name: ").strip()
 

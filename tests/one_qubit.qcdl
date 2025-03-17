@@ -1,0 +1,7 @@
+# Basic single qubit test
+def q0;
+X(q0);
+H(q0);
+H(q0);
+measure;
+? [1]:100;

@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
 import re
 import sys
-from src.qlib import *
 
 class QCDLSyntaxError(Exception):
     """Exception raised for syntax errors in QCDL statements."""
@@ -12,7 +10,7 @@ class Operation:
     def __init__(self, type, gate=None, target=None, controllers=None, state=None, line=None):
         """
         Initializes an Operation object.
-        - type (str): The type of the operation (e.g., "define", "unitary", "controlled", "evaluation").
+        - type (str): The type of the operation (e.g., "define", "unitary", "controlled", "measurement").
         - gate (str, optional): The gate applied (e.g., "X", "H").
         - target (str, optional): The target qubit name.
         - controllers (list, optional): List of controller qubit names.
@@ -51,23 +49,42 @@ class QCDLCompiler:
     def __init__(self):
         """
         Initializes a QCDLCompiler object.
-
         Attributes:
-            qubits (dict): A dictionary to store defined qubits, keyed by their names.
+            qubits (list): A list to store defined qubit names.
             operations (list): A list to store parsed quantum operations.
-            line_number (int): The current line number during compilation for error reporting.
+            line_number (int): The current statement number during compilation for error reporting.
+            expected_result (str): The expected simulation result extracted from a line starting with '?'.
         """
-        self.qubits = {}
+        self.qubits = []
         self.operations = []
         self.line_number = 0
+        self.expected_result = None
 
     def compile(self, content):
         """
         Compiles the given QCDL content.
         - content (str): The QCDL code to compile.
-        - raises QCDLSyntaxError if a syntax error is found in the QCDL code.
+        Raises QCDLSyntaxError if a syntax error is found.
         """
-        statements = [stmt.strip() for stmt in content.split(";") if stmt.strip()]
+        clean_lines = []
+        for line in content.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("#"):
+                # Ignore comment lines.
+                continue
+            elif stripped.startswith("?"):
+                # Extract expected result from the first occurrence and parse it into a dictionary.
+                if self.expected_result is not None:
+                    raise QCDLSyntaxError(f"Multiple expected result lines found at statement {self.line_number + 1}.")
+                self.expected_result = self.parse_expected_result(stripped[1:].strip())
+            else:
+                clean_lines.append(line)
+        # Join the non-comment, non-expected-result lines.
+        processed_content = "\n".join(clean_lines)
+        # Split the content into statements using ';' as delimiter.
+        statements = [stmt.strip() for stmt in processed_content.split(";") if stmt.strip()]
         for stmt in statements:
             self.line_number += 1
             try:
@@ -75,16 +92,29 @@ class QCDLCompiler:
             except QCDLSyntaxError as err:
                 print(f"Compilation Error: {err}")
                 sys.exit(1)
+                
+    def parse_expected_result(self, expected_str):
+        """Parses the expected result string into a dictionary."""
+        expected_dict = {}
+        parts = [part.strip() for part in expected_str.split(";") if part.strip()]
+        for part in parts:
+            match = re.fullmatch(r"\[([01](?:\s*,\s*[01])*)\]\s*:\s*([\d\.]+)", part)
+            if not match:
+                raise QCDLSyntaxError(f"Invalid expected result format: '{part}'")
+            state_str = match.group(1)
+            percentage = float(match.group(2))
+            state_tuple = tuple(int(bit.strip()) for bit in state_str.split(","))
+            expected_dict[state_tuple] = percentage
+        return expected_dict
 
     def parse_statement(self, statement):
         """Parses a single QCDL statement."""
         if not statement:
             return
-
         if statement.startswith("def "):
             self.parse_definition(statement)
         elif statement == "measure":
-            self.operations.append(Operation(type="measurement"))
+            self.operations.append(Operation(type="measurement", line=self.line_number))
         else:
             self.parse_gate_operation(statement)
 
@@ -94,26 +124,24 @@ class QCDLCompiler:
         match = re.fullmatch(pattern, statement)
         if not match:
             raise QCDLSyntaxError(f"Line {self.line_number}: Invalid qubit definition syntax: '{statement}'")
-
         qubit_name = match.group(1)
         if qubit_name in self.qubits:
             raise QCDLSyntaxError(f"Line {self.line_number}: Qubit '{qubit_name}' already defined.")
-
-        if match.group(2) is None or match.group(6) is None:
+        if match.group(2) is None or match.group(3) is None:
             alpha, beta = (1.0, 0.0)
         else:
             try:
                 alpha = complex(match.group(2))
-                beta = complex(match.group(6))
+                beta = complex(match.group(3))
             except ValueError:
                 raise QCDLSyntaxError(f"Line {self.line_number}: Invalid complex number format.")
-
-        self.qubits[qubit_name] = Qubit(qubit_name, alpha, beta)
+        self.qubits.append(qubit_name)
         self.operations.append(Operation(type="define", target=qubit_name, state=(alpha, beta), line=self.line_number))
+
     def parse_gate_operation(self, statement):
         """Parses a unitary or controlled gate operation."""
         unitary_pattern = r"^(X|Y|Z|H|S)\s*\(\s*([A-Za-z]\w*)\s*\)$"
-        controlled_pattern = r"^(CX|CY|CZ)\s*\(\s*([A-Za-z]\w*)\s*:\s*([A-Za-z]\w*(?:\s*,\s*[A-Za-z]\w*)*)\s*\)$"
+        controlled_pattern = r"^(CX|CY|CZ|CH|CS)\s*\(\s*([A-Za-z]\w*)\s*:\s*([A-Za-z]\w*(?:\s*,\s*[A-Za-z]\w*)*)\s*\)$"
 
         unitary_match = re.fullmatch(unitary_pattern, statement)
         controlled_match = re.fullmatch(controlled_pattern, statement)
@@ -139,17 +167,13 @@ class QCDLCompiler:
         target = match.group(2)
         controllers_str = match.group(3)
         controllers = [q.strip() for q in controllers_str.split(",")]
-
         if target not in self.qubits:
             raise QCDLSyntaxError(f"Line {self.line_number}: Qubit '{target}' is not defined for gate {gate}.")
         for ctrl in controllers:
             if ctrl not in self.qubits:
                 raise QCDLSyntaxError(f"Line {self.line_number}: Controller qubit '{ctrl}' is not defined for gate {gate}.")
-
         self.operations.append(Operation(type="controlled", gate=gate, target=target, controllers=controllers, line=self.line_number))
 
-
-# Usage
 def main():
     filename = input("Enter the QCDL file name: ").strip()
     try:
@@ -164,7 +188,7 @@ def main():
 
     print("Compilation successful.\n")
     print("Defined Qubits:")
-    for qubit in compiler.qubits.values():
+    for qubit in compiler.qubits:
         print(f"  {qubit}")
 
     print("\nOperations:")
