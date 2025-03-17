@@ -58,7 +58,7 @@ CX(q0: q1, q2);
 
 ## Measurement
 
-To measure the final value of the system there is the function `evaluate`
+To measure the final value of the system there is the function `measure`
 
 
 ## Examples
@@ -68,7 +68,7 @@ Simple Hadamard and Measurement
 ```scss
 def q0;
 H(q0);
-evaluate;
+measure;
 ```
 
 Controlled-X and Measurement
@@ -78,7 +78,7 @@ def q1;
 def q2: 1, 0;
 H(q1);
 CX(q2: q1);
-evaluate;
+measure;
 ```
 
 Multiple Qubits and Gates
@@ -90,7 +90,7 @@ H(q3);
 X(q4);
 CZ(q3: q4);
 Y(q4);
-evaluate;
+measure;
 ```
 
 Multiple Controlled Gates
@@ -102,7 +102,7 @@ def q7;
 H(q5);
 H(q6);
 CX(q7: q5, q6);
-evaluate;
+measure;
 
 ```
 Phase Shift and Pauli-Z
@@ -111,7 +111,7 @@ Phase Shift and Pauli-Z
 def q8;
 S(q8);
 Z(q8);
-evaluate;
+measure;
 ```
 
 Custom Initial States and Pauli-Y
@@ -119,7 +119,7 @@ Custom Initial States and Pauli-Y
 ```scss
 def q9: 0.8, 0.6;
 Y(q9);
-evaluate;
+measure;
 ```
 
 More Complex Control
@@ -133,7 +133,7 @@ H(q10);
 H(q11);
 H(q12);
 CX(q13: q10, q11, q12);
-evaluate;
+measure;
 ```
 
 X,Y,Z gates together.
@@ -143,7 +143,7 @@ def q14;
 X(q14);
 Y(q14);
 Z(q14);
-evaluate;
+measure;
 ```
 
 CY gate usage
@@ -153,7 +153,7 @@ def q15;
 def q16;
 H(q15);
 CY(q16: q15);
-evaluate;
+measure;
 ```
 
 All control gates on the same target
@@ -168,5 +168,5 @@ H(q19);
 CX(q17: q18);
 CY(q17: q19);
 CZ(q17: q18,q19);
-evaluate;
+measure;
 ```
