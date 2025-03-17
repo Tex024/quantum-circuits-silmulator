@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import re
 import sys
-from qlib import *
+from src.qlib import *
 
 class QCDLSyntaxError(Exception):
     """Exception raised for syntax errors in QCDL statements."""

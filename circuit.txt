@@ -1,0 +1,7 @@
+def q5;
+def q6;
+def q7;
+H(q5);
+H(q6);
+CX(q7: q5, q6);
+measure;

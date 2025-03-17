@@ -28,22 +28,24 @@ class Qubit:
         self.alpha = alpha
         self.beta = beta
         self.group = None
-        self.collapsed = None
+        self.update_collapse()  # set initial collapsed value
 
     def get_state_vector(self) -> np.ndarray:
-        """Returns the qubit state as a numpy array."""
         return np.array([self.alpha, self.beta], dtype=complex)
     
-    def collapse(self):
-        """collapses the qubit value to a specific state using amplitudes."""
+    def update_collapse(self):
+        """Updates the qubit’s collapsed value based on its amplitudes."""
         if random.random() < abs(self.alpha)**2:
-            self.collapse = 0
+            self.collapsed = 0
         else:
-            self.collapse = 1
+            self.collapsed = 1
+
+    def collapse(self):
+        """Alias for update_collapse."""
+        self.update_collapse()
 
     def __repr__(self):
-        return f"Qubit({self.name}, α={self.alpha:.3f}, β={self.beta:.3f})"
-
+        return f"Qubit({self.name}, α={self.alpha:.3f}, β={self.beta:.3f}, collapsed={self.collapsed})"
 
 class UnitaryGate:
     """Represents a unitary quantum gate."""
@@ -104,26 +106,38 @@ CT = ControlledGate("CT", T)
         
 
 class QuantumCircuit:
-    """Represents a quantum circuit that can hold multiple qubits."""
-    def __init__(self, num_qubits: int):
-        self.num_qubits = num_qubits
-        self.qubits = [Qubit(f"q{i}") for i in range(num_qubits)]
+    """Represents a quantum circuit that holds qubits keyed by their names."""
+    def __init__(self, qubits: dict = None):
+        if qubits is None:
+            self.qubits = {}
+        else:
+            self.qubits = qubits
 
-    def apply_gate(self, gate: UnitaryGate, qubit_index: int):
-        """Applies a gate to a qubit in the circuit."""
-        gate.apply(self.qubits[qubit_index])
+    def add_qubit(self, qubit: Qubit):
+        self.qubits[qubit.name] = qubit
 
-    def apply_controlled_gate(self, gate: ControlledGate, target_index: int, control_indexes: list[int]):
-        """Applies a controlled gate to a pair of qubits."""
-        controls = [self.qubits[i] for i in control_indexes]
-        gate.apply(self.qubits[target_index], controls)
+    def apply_gate(self, gate, qubit_name: str):
+        if qubit_name not in self.qubits:
+            raise ValueError(f"Qubit '{qubit_name}' not found in the circuit.")
+        gate.apply(self.qubits[qubit_name])
+
+    def apply_controlled_gate(self, gate, target: str, controllers: list[str]):
+        if target not in self.qubits:
+            raise ValueError(f"Target qubit '{target}' not found in the circuit.")
+        for ctrl in controllers:
+            if ctrl not in self.qubits:
+                raise ValueError(f"Controller qubit '{ctrl}' not found in the circuit.")
+        control_qubits = [self.qubits[c] for c in controllers]
+        gate.apply(self.qubits[target], control_qubits)
 
     def measure_all(self):
-        """Measures all qubits and collapses their states."""
-        return [q.collapsed for q in self.qubits]
+        """Returns a dictionary mapping qubit names to their collapsed values."""
+        # (Assumes each gate call has already updated the collapse state.)
+        return {name: qubit.collapsed for name, qubit in self.qubits.items()}
 
     def __repr__(self):
-        return f"QuantumCircuit(num_qubits={self.num_qubits}, qubits={self.qubits})"
+        return f"QuantumCircuit(qubits={self.qubits})"
+
 
 
 # Usage
