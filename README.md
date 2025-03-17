@@ -6,7 +6,11 @@ This project provides a simple simulator for quantum circuits described using th
 
 ### Prerequisites
 
-Ensure you have Python installed on your system. This project is compatible with Python 3.x.
+Ensure that Python 3.x is installed on your system. Additionally, this project requires the numpy library. Verify that numpy is installed, and if not, install it using the following command:
+
+```bash
+pip install numpy
+```
 
 ### Installation
 
@@ -23,13 +27,13 @@ cd QuantumCircuitSimulator
 
 The ```main.py``` script allows you to run a quantum circuit simulation. It will prompt you for a QCDL file and the number of simulations to perform.
 
-```
+```shell
 python main.py
 ```
 
 ### Example of execution:
 
-```
+```shell
 Enter QCDL file name: file_name.qcdl
 Enter number of simulations: 1000
 Compilation successful. Simulating circuit...
@@ -44,13 +48,13 @@ Compilation successful. Simulating circuit...
 
 The ```tester.py``` script automatically runs all tests located in the tests folder. It evaluates each test and provides a summary of the results.
 
-```
+```shell
 python tester.py
 ```
 
 ### Example output:
 
-```
+```shell
 Test 'test0.qcdl' passed.
 Test 'test1.qcdl' failed.
 Expected percentages:
