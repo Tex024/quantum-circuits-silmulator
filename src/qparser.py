@@ -141,7 +141,7 @@ class QCDLCompiler:
     def parse_gate_operation(self, statement):
         """Parses a unitary or controlled gate operation."""
         unitary_pattern = r"^(X|Y|Z|H|S)\s*\(\s*([A-Za-z]\w*)\s*\)$"
-        controlled_pattern = r"^(CX|CY|CZ|CH|CS)\s*\(\s*([A-Za-z]\w*)\s*:\s*([A-Za-z]\w*(?:\s*,\s*[A-Za-z]\w*)*)\s*\)$"
+        controlled_pattern = r"^(CX|CY|CZ|CH|CS|CT)\s*\(\s*([A-Za-z]\w*)\s*:\s*([A-Za-z]\w*(?:\s*,\s*[A-Za-z]\w*)*)\s*\)$"
 
         unitary_match = re.fullmatch(unitary_pattern, statement)
         controlled_match = re.fullmatch(controlled_pattern, statement)

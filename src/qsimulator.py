@@ -2,9 +2,9 @@ import math
 import numpy as np
 from src.qparser import Operation
 
-def apply_one_qubit(state: np.ndarray, operator: np.ndarray, target_index: int, num_qubits: int):
+def apply_unitary_gate(state: np.ndarray, operator: np.ndarray, target_index: int, num_qubits: int):
     """
-    Applies a one-qubit operator directly on the state vector.
+    Applies a unitary gate directly on the state vector.
     The state is updated in-place.
     """
     N = 2 ** num_qubits
@@ -22,7 +22,7 @@ def apply_one_qubit(state: np.ndarray, operator: np.ndarray, target_index: int, 
 
 def apply_controlled_gate(state: np.ndarray, operator: np.ndarray, control_indices: list, target_index: int, num_qubits: int):
     """
-    Applies a controlled one-qubit operator on the state vector.
+    Applies a controlled gate on the state vector.
     Only the amplitudes for which all control qubits are 1 are updated.
     """
     N = 2 ** num_qubits
@@ -42,20 +42,17 @@ def apply_controlled_gate(state: np.ndarray, operator: np.ndarray, control_indic
     state[indices0] = operator[0, 0] * amp0 + operator[0, 1] * amp1
     state[indices1] = operator[1, 0] * amp0 + operator[1, 1] * amp1
 
-# Gate definitions
+# GATES
 I_gate = np.array([[1, 0], [0, 1]], dtype=complex)
 X_gate = np.array([[0, 1], [1, 0]], dtype=complex)
 Y_gate = np.array([[0, -1j], [1j, 0]], dtype=complex)
 Z_gate = np.array([[1, 0], [0, -1]], dtype=complex)
-H_gate = np.array([[1/math.sqrt(2), 1/math.sqrt(2)],
-                   [1/math.sqrt(2), -1/math.sqrt(2)]], dtype=complex)
+H_gate = np.array([[1/math.sqrt(2), 1/math.sqrt(2)],[1/math.sqrt(2), -1/math.sqrt(2)]], dtype=complex)
 S_gate = np.array([[1, 0], [0, 1j]], dtype=complex)
 T_gate = np.array([[1, 0], [0, np.exp(1j * math.pi / 4)]], dtype=complex)
 
-UNITARY_MAP = {"I": I_gate, "X": X_gate, "Y": Y_gate, "Z": Z_gate,
-               "H": H_gate, "S": S_gate, "T": T_gate}
-CONTROLLED_MAP = {"CX": X_gate, "CY": Y_gate, "CZ": Z_gate,
-                  "CH": H_gate, "CS": S_gate, "CT": T_gate}
+UNITARY_MAP = {"I": I_gate, "X": X_gate, "Y": Y_gate, "Z": Z_gate,"H": H_gate, "S": S_gate, "T": T_gate}
+CONTROLLED_MAP = {"CX": X_gate, "CY": Y_gate, "CZ": Z_gate,"CH": H_gate, "CS": S_gate, "CT": T_gate}
 
 class QuantumCircuit:
     """Represents a quantum circuit using a global state vector."""
@@ -73,7 +70,7 @@ class QuantumCircuit:
         """Applies a one-qubit gate to a target qubit."""
         target_index = self.qubit_names.index(target)
         operator = UNITARY_MAP[gate_name]
-        apply_one_qubit(self.state, operator, target_index, self.num_qubits)
+        apply_unitary_gate(self.state, operator, target_index, self.num_qubits)
 
     def apply_controlled(self, gate_name: str, target: str, controllers: list):
         """Applies a controlled gate to a target qubit."""
