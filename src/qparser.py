@@ -9,6 +9,7 @@ Date: 18/03/2024
 
 import re
 import sys
+import cmath
 
 #############
 # EXCEPTION #
@@ -123,24 +124,31 @@ class QCDLCompiler:
             self.parse_gate_operation(statement)
 
     def parse_definition(self, statement):
-        """Parses a qubit definition statement."""
-        pattern = r"^def\s+([A-Za-z]\w*)(?:\s*:\s*([-+]?\d*\.?\d+)\s*,\s*([-+]?\d*\.?\d+))?$"
+        """Parses a qubit definition statement with support for complex amplitudes."""
+        pattern = r"^def\s+([A-Za-z]\w*)(?:\s*:\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?(?:[+-]\d*\.?\d+(?:[eE][-+]?\d+)?)?[jJ]?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?(?:[+-]\d*\.?\d+(?:[eE][-+]?\d+)?)?[jJ]?))?$"
         match = re.fullmatch(pattern, statement)
+
         if not match:
             raise QCDLSyntaxError(f"Line {self.line_number}: Invalid qubit definition syntax: '{statement}'")
+
         qubit_name = match.group(1)
+
         if qubit_name in self.qubits:
             raise QCDLSyntaxError(f"Line {self.line_number}: Qubit '{qubit_name}' already defined.")
+
         if match.group(2) is None or match.group(3) is None:
             alpha, beta = (1.0, 0.0)
         else:
             try:
-                alpha = complex(match.group(2))
-                beta = complex(match.group(3))
+                alpha = complex(match.group(2).replace("j", "j"))  # Ensure correct parsing
+                beta = complex(match.group(3).replace("j", "j"))
             except ValueError:
-                raise QCDLSyntaxError(f"Line {self.line_number}: Invalid complex number format.")
+                raise QCDLSyntaxError(f"Line {self.line_number}: Invalid complex number format in '{statement}'.")
+
         self.qubits.append(qubit_name)
         self.operations.append(Operation(type="define", target=qubit_name, state=(alpha, beta), line=self.line_number))
+
+
 
     def parse_gate_operation(self, statement):
         """Parses a unitary or controlled gate operation."""

@@ -23,6 +23,14 @@ def q0;
 # q1 is initialized with custom amplitudes (0.6, 0.8)
 def q1: 0.6, 0.8;
 ? [0]:36; [1]:64
+
+# Qubit initialized with a complex state
+def q0: 0.6+0.8j, 0.0;
+? [0]:36; [1]:64
+
+# Bell state-like initialization
+def q1: 0.707, 0.707j;
+? [0]:50; [1]:50
 ```
 
 ## Unitary Gates
@@ -93,68 +101,73 @@ measure;
 
 ## Examples
 
-Simple Hadamard and Measurement
+Simple Hadamard Gate
 
 ```php
 def q0;
 H(q0);
 measure;
-? [0]: 50; [1]: 50; # q0 is in superposition, equal probability of |0> and |1>
+? [0]: 50; [1]: 50;
 ```
 
-Controlled-X and Measurement
+Bell state
 
 ```php
 def q1;
-def q2: 1, 0;
+def q2;
 H(q1);
-CX(q2: q1);
+CX(q1: q2);
 measure;
-? [0, 0]: 50; [1, 1]: 50; # q1 and q2 are entangled, equal probability of |00> and |11>
+? [0, 0]: 50; [1, 1]: 50;
 ```
 
-Multiple Qubits and Gates
+Custom initial state
 
 ```php
-def q3;
-def q4: 0.707, 0.707;
-H(q3);
-X(q4);
-CZ(q3: q4);
-Y(q4);
+def q3: 0.707, 0.707j;
+X(q3);
+Y(q3);
 measure;
 ```
 
-Multiple Controlled Gates
+Quantum teleportation circuit
 
 ```php
+def q4: 1, 0;
 def q5;
 def q6;
-def q7;
 H(q5);
-H(q6);
-CX(q7: q5, q6);
+CX(q5: q6);
+CX(q4: q5);
+H(q4);
 measure;
-
+? [0, 0, 0]: 25; [0, 1, 1]: 25; [1, 0, 1]: 25; [1, 1, 0]: 25;
 ```
-Phase Shift and Pauli-Z
+Multi-Controlled Gate
 
 ```php
+def q7;
 def q8;
-S(q8);
-Z(q8);
+def q9;
+def q10;
+H(q7);
+H(q8);
+H(q9);
+CX(q10: q7, q8, q9);
 measure;
 ```
 
-Custom Initial States and Pauli-Y
+Phase kickback
 
 ```php
-def q9: 0.8, 0.6;
-Y(q9);
+def q11;
+H(q11);
+S(q11);
+T(q11);
 measure;
 ```
 
-More Complex Control
+More Controllers
 
 ```php
 def q10;
@@ -168,37 +181,14 @@ CX(q13: q10, q11, q12);
 measure;
 ```
 
-X,Y,Z gates together.
+Deutsch-Jozsa Algorithm
 
 ```php
-def q14;
-X(q14);
-Y(q14);
-Z(q14);
-measure;
-```
-
-CY gate usage
-
-```php
-def q15;
-def q16;
-H(q15);
-CY(q16: q15);
-measure;
-```
-
-All control gates on the same target
-
-```php
-def q17;
-def q18;
-def q19;
-H(q17);
-H(q18);
-H(q19);
-CX(q17: q18);
-CY(q17: q19);
-CZ(q17: q18,q19);
+def q12;
+def q13;
+H(q12);
+H(q13);
+CX(q12: q13);
+H(q12);
 measure;
 ```
