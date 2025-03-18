@@ -1,22 +1,31 @@
+"""
+This script implements a compiler for QCDL (Quantum Circuit Description Language).
+It defines classes for representing quantum operations (`Operation`) and handling syntax errors (`QCDLSyntaxError`). 
+The `QCDLCompiler` class parses QCDL code, manages qubit definitions, and generates a list of `Operation` objects representing the quantum circuit.
+
+Author: Tex024
+Date: 18/03/2024
+"""
+
 import re
 import sys
+
+#############
+# EXCEPTION #
+#############
 
 class QCDLSyntaxError(Exception):
     """Exception raised for syntax errors in QCDL statements."""
     pass
 
+##############
+# OPERATIONS #
+##############
+
 class Operation:
     """Represents a quantum operation."""
     def __init__(self, type, gate=None, target=None, controllers=None, state=None, line=None):
-        """
-        Initializes an Operation object.
-        - type (str): The type of the operation (e.g., "define", "unitary", "controlled", "measurement").
-        - gate (str, optional): The gate applied (e.g., "X", "H").
-        - target (str, optional): The target qubit name.
-        - controllers (list, optional): List of controller qubit names.
-        - state (tuple, optional): The qubit's state (alpha, beta) for definitions.
-        - line (int, optional): The line number where the operation was defined.
-        """
+        """Initializes an Operation object."""
         self.type = type
         self.gate = gate
         self.target = target
@@ -39,22 +48,18 @@ class Operation:
 
         return f"{self.type}: {details}"
 
+############
+# COMPILER #
+############
+
 class QCDLCompiler:
     """
     Compiles QCDL code into a list of operations.
-
     This class provides methods to parse and compile QCDL (Quantum Circuit Description Language) code.
     It manages qubits, parses statements, and generates a list of operations representing the quantum circuit.
     """
     def __init__(self):
-        """
-        Initializes a QCDLCompiler object.
-        Attributes:
-            qubits (list): A list to store defined qubit names.
-            operations (list): A list to store parsed quantum operations.
-            line_number (int): The current statement number during compilation for error reporting.
-            expected_result (str): The expected simulation result extracted from a line starting with '?'.
-        """
+        """Initializes a QCDLCompiler object."""
         self.qubits = []
         self.operations = []
         self.line_number = 0
@@ -63,7 +68,6 @@ class QCDLCompiler:
     def compile(self, content):
         """
         Compiles the given QCDL content.
-        - content (str): The QCDL code to compile.
         Raises QCDLSyntaxError if a syntax error is found.
         """
         clean_lines = []
@@ -90,7 +94,7 @@ class QCDLCompiler:
             try:
                 self.parse_statement(stmt)
             except QCDLSyntaxError as err:
-                print(f"Compilation Error: {err}")
+                print(f"\033[91m[QCDL] Compilation Error: {err}\033[0m")
                 sys.exit(1)
                 
     def parse_expected_result(self, expected_str):
@@ -173,27 +177,3 @@ class QCDLCompiler:
             if ctrl not in self.qubits:
                 raise QCDLSyntaxError(f"Line {self.line_number}: Controller qubit '{ctrl}' is not defined for gate {gate}.")
         self.operations.append(Operation(type="controlled", gate=gate, target=target, controllers=controllers, line=self.line_number))
-
-def main():
-    filename = input("Enter the QCDL file name: ").strip()
-    try:
-        with open(filename, "r") as file:
-            content = file.read()
-    except Exception as e:
-        print(f"Error opening file '{filename}': {e}")
-        sys.exit(1)
-
-    compiler = QCDLCompiler()
-    compiler.compile(content)
-
-    print("Compilation successful.\n")
-    print("Defined Qubits:")
-    for qubit in compiler.qubits:
-        print(f"  {qubit}")
-
-    print("\nOperations:")
-    for op in compiler.operations:
-        print(op)
-
-if __name__ == "__main__":
-    main()

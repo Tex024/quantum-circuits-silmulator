@@ -1,38 +1,36 @@
+"""
+This module provides a testing framework for quantum circuits described in QCDL.
+The `Tester` class automates the execution of tests located in a specified directory. 
+It reads QCDL files, compiles them into quantum operations using the `QCDLCompiler`, and simulates the circuits using the `Simulator`. 
+The simulation results, represented as probabilities of measurement outcomes, are then compared against expected results defined within the test files.
+
+Author: Tex024
+Date: 18/03/2024
+"""
+
 import os
 import numpy as np
+from src.qsimulator import Simulator
+from src.qparser import QCDLCompiler
 
-from src.qsimulator import *
-from src.qparser import *
+##########
+# TESTER #
+##########
 
 class Tester:
-    def __init__(self, tests_directory="tests", num_simulations=5000):
-        """
-        Initialize the tester.
-        
-        Parameters:
-            tests_directory (str): Path to the folder containing test files.
-            num_simulations (int): Number of simulations to run for each test.
-        """
+    def __init__(self, tests_directory="tests"):
+        """Initialize the tester."""
         self.tests_directory = tests_directory
-        self.num_simulations = num_simulations
         self.tolerance = 0.05
 
     def run_test(self, test_filename):
-        """
-        Run a single test.
-        
-        Parameters:
-            test_filename (str): The filename of the .qcdl test file.
-        
-        Returns:
-            bool: True if the test output matches the expected result, False otherwise.
-        """
+        """Run a single test."""
         test_path = os.path.join(self.tests_directory, test_filename)
         try:
             with open(test_path, "r") as file:
                 content = file.read()
         except Exception as error:
-            print(f"Error reading test file '{test_filename}': {error}")
+            print(f"[TEST] Error reading test file '{test_filename}': {error}")
             return False
 
         # Compile the QCDL content.
@@ -40,39 +38,57 @@ class Tester:
             compiler = QCDLCompiler()
             compiler.compile(content)
         except Exception as error:
-            print(f"Compilation error in '{test_filename}': {error}")
+            print(f"[QCDL] Compilation error in '{test_filename}': {error}")
             return False
 
         # Ensure the expected result is provided inside the file.
         if compiler.expected_result is None:
-            print(f"No expected result found in '{test_filename}'. Expected a line starting with '?'.")
+            print(f"[TEST] No expected result found in '{test_filename}'. Expected a line starting with '?'.")
             return False
 
-        # Run the simulation and capture the printed output.
+        # Run the simulation and compute outcome probabilities.
         try:
-            simulator = Simulator(compiler.operations, self.num_simulations)
-            simulator.run_all()
-            sim_percentages = simulator.percentages  # dict with keys as outcome tuples and values as percentages.
+            simulator = Simulator(compiler.operations)
+            final_state = simulator.run()
+            probabilities = np.abs(final_state) ** 2 * 100
+            sim_percentages = {}
+            total_states = 2 ** simulator.num_qubits
+            for index in range(total_states):
+                outcome_tuple = tuple(int(bit) for bit in format(index, f'0{simulator.num_qubits}b'))
+                sim_percentages[outcome_tuple] = probabilities[index]
+            # Filter out outcomes with negligible (0.0) probability.
+            sim_percentages = {outcome: perc for outcome, perc in sim_percentages.items() if perc > 1e-6}
         except Exception as error:
-            print(f"Simulation error in '{test_filename}': {error}")
+            print(f"[TEST] Simulation error in '{test_filename}': {error}")
             return False
 
-        # Compare the simulation percentages with the expected result.
+        # Compare the computed probabilities with the expected results.
         if self.compare_results(sim_percentages, compiler.expected_result):
-            print(f"Test '{test_filename}' passed.")
+            print(f"\033[92m[TEST] Test '{test_filename}' passed.\033[0m")
             return True
         else:
-            print(f"Test '{test_filename}' failed.")
-            print("Expected percentages:")
-            print(compiler.expected_result)
-            print("Simulation percentages:")
-            print(sim_percentages)
+            print(f"\033[91m[TEST] Test '{test_filename}' failed.\033[0m")
+            print("-" * 43)
+
+            all_outcomes = set(compiler.expected_result.keys()) | set(sim_percentages.keys())
+
+            for outcome in sorted(all_outcomes):
+                expected = compiler.expected_result.get(outcome, 0.0)
+                actual = sim_percentages.get(outcome, 0.0)
+                
+                diff = abs(expected - actual)
+                
+                if diff > self.tolerance:
+                    print(f"{outcome} | Expected: {expected:.3f} | Actual: {actual:.3f} \033[91m(Diff: {diff:.3f})\033[0m")
+                else:
+                    print(f"{outcome} | Expected: {expected:.3f} | Actual: {actual:.3f}")
+
+            print("-" * 43)
             return False
+
         
     def compare_results(self, sim_percentages, expected_percentages):
-        """
-        Compare simulation results with expected results within a specified tolerance.
-        """
+        """Compare simulation results with expected results within a specified tolerance."""
         if set(sim_percentages.keys()) != set(expected_percentages.keys()):
             return False
 
@@ -95,10 +111,21 @@ class Tester:
             if self.run_test(test):
                 passed_tests += 1
 
-        print("\n[QCDL] Test Summary:")
-        print(f"\tTotal tests: {total_tests}")
-        print(f"\tPassed: {passed_tests}")
-        print(f"\tFailed: {total_tests - passed_tests}")
+        print("\nTest Summary:")
+        print("-" * 20)
+        print(f"{'Total Tests:':<12} {total_tests:>4}")
+        print(f"\033[92m{'Passed:':<12} {passed_tests:>4}\033[0m")
+        failed_tests = total_tests - passed_tests
+        if failed_tests > 0:
+            print(f"\033[91m{'Failed:':<12} {failed_tests:>4}\033[0m")
+        else:
+            print(f"{'Failed:':<12} {failed_tests:>4}")
+        print("-" * 20)
+
+
+########
+# MAIN #
+########
 
 if __name__ == "__main__":
     tester = Tester()

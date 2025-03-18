@@ -1,12 +1,16 @@
 # Quantum Circuit Simulator
 
-This project provides a simple simulator for quantum circuits described using the Quantum Circuit Description Language (QCDL). The simulator can execute quantum circuits and perform multiple simulations to provide probabilistic results.
+This project implements a deterministic quantum circuit simulator that computes the final state vector and outcome probabilities of quantum circuits described using the **Quantum Circuit Description Language (QCDL)**. The simulator supports both standard unitary gates and controlled gates, providing exact probabilities for each computational basis.
+
+## Overview
+
+The simulator parses a QCDL file to extract *qubit definitions* and *quantum operations* (unitary and controlled). It then deterministically evolves the global state vector by applying the specified operations in sequence and measures the resulting amplitude probabilities.
 
 ## Getting Started
 
 ### Prerequisites
 
-Ensure that Python 3.x is installed on your system. Additionally, this project requires the numpy library. Verify that numpy is installed, and if not, install it using the following command:
+Ensure that Python 3.x is installed on your system. This project also requires the NumPy library. You can install NumPy via pip if it is not already installed:
 
 ```bash
 pip install numpy
@@ -21,11 +25,24 @@ git clone https://github.com/Tex024/QuantumCircuitSimulator.git
 cd QuantumCircuitSimulator
 ```
 
+## Project structure
+
+```bash
+QuantumCircuitSimulator/
+├── main.py              # Main script to run quantum circuit simulations.
+├── tester.py            # Script to run tests on QCDL files in the tests folder.
+├── tests/               # Directory containing QCDL test files.
+├── src/                 
+│   ├── qparser.py       # Module for parsing QCDL files.
+│   └── qsimulator.py    # Deterministic quantum circuit simulator implementation.
+└── QCDL.md              # Description of the QCDL language.
+```
+
 ## Usage
 
 ### Running the Simulator
 
-The ```main.py``` script allows you to run a quantum circuit simulation. It will prompt you for a QCDL file and the number of simulations to perform.
+The ```main.py``` script allows you to run a quantum circuit simulation. It will prompt you for a QCDL file to evaluate.
 
 ```shell
 python main.py
@@ -34,19 +51,31 @@ python main.py
 ### Example of execution:
 
 ```shell
-Enter QCDL file name: file_name.qcdl
-Enter number of simulations: 1000
-Compilation successful. Simulating circuit...
-[QCDL] Number of simulations: 1000
-[QCDL] Qubits: 2
-[QCDL] Results:
-    |00> : 48.600%
-    |11> : 51.400%
+Enter the QCDL file name: circuit.qcdl
+[QCDL] Compilation successful.
+Simulating circuit...
+
+Final State Vector:
+--------------------
+|00>: 0.5 + 0.0j
+|10>: 0.854 + 0.0j
+|11>: -0.146 + 0.0j
+--------------------
+
+Outcome Probabilities:
+---------------------
+Outcome | Probability
+---------------------
+|00>    |    25.0%
+|01>    |     0.0%
+|10>    |  72.855%
+|11>    |   2.145%
+---------------------
 ```
 
 ## Running Tests
 
-The ```tester.py``` script automatically runs all tests located in the tests folder. It evaluates each test and provides a summary of the results.
+The ```tester.py``` script runs all QCDL test files in the ```tests``` directory, comparing the computed outcome probabilities against the expected values defined within each test file. The script filters out outcomes with negligible probabilities, ensuring that only significant results are compared.
 
 ```shell
 python tester.py
@@ -55,26 +84,38 @@ python tester.py
 ### Example output:
 
 ```shell
-Test 'test0.qcdl' passed.
-Test 'test1.qcdl' failed.
-Expected percentages:
-{(0, 0): 25.0, (1, 0): 72.85, (1, 1): 2.15}
-Simulation percentages:
-{(0, 0): 50.92, (1, 0): 24.68, (1, 1): 24.3}
-Test 'test2.qcdl' passed.
+[TEST] Test 'test1.qcdl' passed.
+[TEST] Test 'test2.qcdl' failed.
+-------------------------------------------
+(0, 0) | Expected: 25.000 | Actual: 50.000 (Diff: 25.000)
+(1, 1) | Expected: 75.000 | Actual: 50.000 (Diff: 25.000)
+-------------------------------------------
+[TEST] Test 'test3.qcdl' passed.
+[TEST] Test 'test4.qcdl' passed.
 
-[QCDL] Test Summary:
-        Total tests: 3
-        Passed: 2
-        Failed: 1
+Test Summary:
+--------------------
+Total Tests:    4
+Passed:         3
+Failed:         1
+--------------------
 ```
 
-## Project Structure
+## How the system works
 
-```
-    main.py: Main script to run quantum circuit simulations.
-    tester.py: Script to run tests on QCDL files in the tests folder.
-    tests/: Directory containing QCDL test files.
-    src/: Directory containing all other scripts of this project.
-    QCDL.md: QCDL language desciption.
-```
+1) *Parsing QCDL*: 
+    The ```qparser.py``` module parses the QCDL file to extract qubit definitions and a list of operations (including unitary and controlled gate operations).
+
+2) *State Vector Initialization*:
+    The simulator constructs the initial global state vector by taking the tensor product of each qubit’s initial state as defined in the QCDL file.
+
+3) *Evolution and Simulation*:
+    Using the deterministic simulator implemented in ```qsimulator.py```, the state vector is evolved by applying each gate operation sequentially:
+    - *Unitary Gates*: A unitary gate is applied directly by updating the amplitudes corresponding to the target qubit.
+    - *Controlled Gates*: A controlled gate is applied only to those indices where the control qubits are in the state ∣1⟩∣1⟩ and the target qubit is ∣0⟩∣0⟩.
+
+4) *Probability Computation*:
+    Once all operations are applied, the simulator computes the probability of each outcome by taking the square of the modulus of the amplitude, then multiplying by 100 to express it as a percentage.
+
+5) *Testing Framework*:
+    The ```tester.py``` script compares the computed probabilities with the expected values provided in each test file, reporting a summary of the tests.
