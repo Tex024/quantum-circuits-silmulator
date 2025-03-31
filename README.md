@@ -29,29 +29,34 @@ cd QuantumCircuitSimulator
 
 ```bash
 QuantumCircuitSimulator/
-├── main.py              # Main script to run quantum circuit simulations.
-├── tester.py            # Script to run tests on QCDL files in the tests folder.
-├── tests/               # Directory containing QCDL test files.
+├── main.py                 # Main script to run quantum circuit simulations.
+├── tester.py               # Script to run tests on QCDL files in the tests folder.
+├── tests/                  # Directory containing QCDL test files.
 ├── src/                 
-│   ├── qparser.py       # Module for parsing QCDL files.
-│   └── qsimulator.py    # Deterministic quantum circuit simulator implementation.
-└── QCDL.md              # Description of the QCDL language.
+│   ├── qcdl_executor.py    # File used for executing the parsing and the simulation of a qcdl file.
+│   ├── tester.py           # Module for testing all files in tests folder.
+│   ├── qparser.py          # Module for parsing QCDL files.
+│   └── qsimulator.py       # Deterministic quantum circuit simulator implementation.
+├── QCDL.md/                # Description of the QCDL language.
+├── README               
+└── LICENCE               
 ```
 
 ## Usage
 
 ### Running the Simulator
 
-The ```main.py``` script allows you to run a quantum circuit simulation. It will prompt you for a QCDL file to evaluate.
+To execute a QCDL file, use the `run` command followed by your `.qcdl` filename:
 
 ```shell
-python main.py
+python main.py run <qcdl_file>
 ```
 
 ### Example of execution:
 
 ```shell
-Enter the QCDL file name: circuit.qcdl
+> main.py run file.qcdl 
+
 [QCDL] Compilation successful.
 Simulating circuit...
 
@@ -75,15 +80,17 @@ Outcome | Probability
 
 ## Running Tests
 
-The ```tester.py``` script runs all QCDL test files in the ```tests``` directory, comparing the computed outcome probabilities against the expected values defined within each test file. The script filters out outcomes with negligible probabilities, ensuring that only significant results are compared.
+It is also possible to run all QCDL test files in the ```tests``` directory, comparing the computed outcome probabilities against the expected values defined within each test file. The script filters out outcomes with negligible probabilities, ensuring that only significant results are compared.
 
 ```shell
-python tester.py
+python main.py test
 ```
 
 ### Example output:
 
 ```shell
+> python main.py test
+
 [TEST] Test 'test1.qcdl' passed.
 [TEST] Test 'test2.qcdl' failed.
 -------------------------------------------

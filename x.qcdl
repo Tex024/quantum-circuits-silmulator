@@ -1,0 +1,49 @@
+# Complex Quantum Circuit Test (Reduced Qubits, Complex Gates)
+
+# Define qubits with complex initial states
+def q0: 0.707, 0.707;
+def q1: 0.6, -0.8;
+def q2: 0.8, 0.6;
+def q3: 0.5, -0.866;
+def q4: 0.9, 0.435889;
+
+# Apply a series of complex gate operations
+H(q0);
+X(q1);
+Y(q2);
+Z(q3);
+S(q4);
+CX(q1: q0);
+CY(q2: q1);
+CZ(q3: q2);
+CH(q4: q3);
+CS(q0: q4);
+CX(q2: q0, q1);
+CY(q3: q1, q2);
+CZ(q4: q2, q3);
+CH(q0: q3, q4);
+CS(q1: q4, q0);
+CX(q3: q0, q1, q2);
+CY(q4: q1, q2, q3);
+CZ(q0: q2, q3, q4);
+CH(q1: q3, q4, q0);
+CS(q2: q4, q0, q1);
+X(q0);
+Y(q1);
+Z(q2);
+H(q3);
+S(q4);
+CX(q0: q1);
+CY(q1: q2);
+CZ(q2: q3);
+CH(q3: q4);
+CS(q4: q0);
+CX(q1: q0,q2);
+CY(q2: q1,q3);
+CZ(q3: q2,q4);
+CH(q4: q3,q0);
+CS(q0: q4,q1);
+CT(q1: q0, q2, q3, q4);
+
+# Measure the final state
+measure;
